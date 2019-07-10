@@ -50,7 +50,7 @@ describe('Client side filter', () => {
     });
   });
 
-  it('should be find success(findOne)', () => {
+  /*it('should be find success(findOne)', () => {
     return DB2Test.findOne({
       where: {
         id: 's1'
@@ -65,7 +65,7 @@ describe('Client side filter', () => {
       expect(is_private).to.equal(true);
       expect(params && params.type).to.equal('line');
     });
-  });
+  });*/
 
   /*it('should be find success(findAll)', () => {
     return DB2Test.findAll({
@@ -82,24 +82,37 @@ describe('Client side filter', () => {
       expect(is_private).to.equal(true);
       expect(params && params.type).to.equal('line');
     });
-  });
+  });*/
 
-  it('should be find success(json sub query)', async () => {
-    let slice1 = await DB2Test.findOne({
+  it('should be find success(json sub query)', () => {
+    return DB2Test.findOne({
       where: {
         params: { type: 'line' }
-      }
-    })
-    const { id, name, visitCount, price, is_private, params } = slice1 || { };
-    expect(id).to.equal('s1');
-    expect(name).to.equal('slice_01');
-    expect(visitCount).to.equal(10);
-    expect(price).to.equal(5.2);
-    expect(is_private).to.equal(true);
-    expect(params && params.type).to.equal('line');
-  })
+      },
+      raw: true
+    }).then(slice1 => {
+      const { id, name, visitCount, price, is_private, params } = slice1 || { };
+      expect(id).to.equal('s1');
+      expect(name).to.equal('slice_01');
+      expect(visitCount).to.equal(10);
+      expect(price).to.equal(5.2);
+      expect(is_private).to.equal(true);
+      expect(params && params.type).to.equal('line');
+    });
+  });
 
-  it('should be find success(string path for json query)', async () => {
+  it('should be find nothing(json sub query)', () => {
+    return DB2Test.findOne({
+      where: {
+        params: { type: 'line1' }
+      },
+      raw: true
+    }).then(slice1 => {
+      expect(!slice1).to.equal(true);
+    });
+  });
+
+  /*it('should be find success(string path for json query)', async () => {
     let slice1 = await DB2Test.findOne({
       where: {
         'params.type': 'line'
@@ -113,4 +126,9 @@ describe('Client side filter', () => {
     expect(is_private).to.equal(true);
     expect(params && params.type).to.equal('line');
   })*/
+
+  // TODO findAll where -> findAll, client side filter
+  // TODO count where -> findAll, client side aggregate
+  // TODO update where -> findAll, updateById
+  // TODO delete where -> findAll, deleteById
 });
