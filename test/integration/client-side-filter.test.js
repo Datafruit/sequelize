@@ -8,10 +8,28 @@ const chai = require('chai'),
 
 describe('Client side filter', () => {
   let sequelize, DB2Test;
+  const sampleData = _.range(50).map(i => ({
+    id: `s${i}`,
+    name: `slice_${i + 1}`,
+    visitCount: 10 + i,
+    price: 5.2 + i * 5.2,
+    is_private: i % 2 === 0,
+    params: {
+      type: i % 3 === 0 ? 'line' : i % 3 === 1 ? 'bar' : 'pie',
+      dimensions: i % 2 === 0 ? ['event_name', 'duration'] : ['event_name'],
+      metrics: ['total'],
+      extraSettings: i % 5 === 0
+        ? { timeZone: i % 3 === 0 ? 'Asia/Tokyo' : 'Asia/Shanghai', refreshInterval: 5 * i }
+        : undefined
+    }
+  }));
+  const needKeys = Object.keys(sampleData[0]);
+  const pickNeed = obj => _.pick(obj, needKeys);
+
   before(() => {
-    // 兼容旧版本调用方式
     sequelize = Support.createSequelizeInstance({
       logging: console.log,
+      // 兼容旧版本调用方式
       operatorsAliases: _.mapKeys(Sequelize.Op, (v, k) => `$${k}`)
     });
     DB2Test = sequelize.define('DB2Test', {
@@ -34,177 +52,168 @@ describe('Client side filter', () => {
   after(() => {
   });
 
-  it('should be create success', () => {
-    return DB2Test.create({
-      id: 's1',
-      name: 'slice_01',
-      visitCount: 10,
-      price: 5.2,
-      is_private: true,
-      params: {
-        type: 'line'
-      }
-    }).then(slice1 => {
-      const { id, name, visitCount, price, is_private, params } = slice1 || { };
-      expect(id).to.equal('s1');
-      expect(name).to.equal('slice_01');
-      expect(visitCount).to.equal(10);
-      expect(price).to.equal(5.2);
-      expect(is_private).to.equal(true);
-      expect(params && params.type).to.equal('line');
-    });
-  });
-
-  it('should be bulk create success', () => {
-    const s2 = {
-      id: 's2',
-      name: 'slice_02',
-      visitCount: 20,
-      price: 10.4,
-      is_private: false,
-      params: { type: 'bar' }
-    };
-    const s3 = {
-      id: 's3',
-      name: 'slice_03',
-      visitCount: 30,
-      price: 15.8,
-      is_private: true,
-      params: { type: 'pie' }
-    };
-    return DB2Test.bulkCreate([s2, s3])
-      .then(() => {
-        return DB2Test.findAll({
-          where: {
-            id: { $in: ['s2', 's3'] }
-          },
-          raw: true
-        });
-      })
-      .then(slices => {
-        const keys = Object.keys(s2);
-        const picked = slices.map(s => _.pick(s, keys));
-        expect(picked).to.deep.equal([s2, s3]);
+  describe('Insert test', () => {
+    it('should be create success', () => {
+      return DB2Test.create(sampleData[0]).then(slice1 => {
+        expect(pickNeed(slice1)).to.deep.equal(sampleData[0]);
       });
-  });
+    });
 
-  it('should be find success(findOne)', () => {
-    return DB2Test.findOne({
-      where: {
-        id: 's1'
-      },
-      raw: true
-    }).then(slice1 => {
-      const { id, name, visitCount, price, is_private, params } = slice1 || { };
-      expect(id).to.equal('s1');
-      expect(name).to.equal('slice_01');
-      expect(visitCount).to.equal(10);
-      expect(price).to.equal(5.2);
-      expect(is_private).to.equal(true);
-      expect(params && params.type).to.equal('line');
+    it('should be bulk create success', () => {
+      const records = _.drop(sampleData, 1);
+      return DB2Test.bulkCreate(records)
+        .then(() => {
+          return DB2Test.findAll({
+            where: {
+              id: { $ne: 's1' }
+            },
+            raw: true
+          });
+        })
+        .then(slices => {
+          const picked = slices.map(pickNeed);
+          expect(picked).to.deep.equal(records);
+        });
     });
   });
 
-  it('should be find success(findAll)', () => {
-    return DB2Test.findAll({
-      where: {
-        id: 's1'
-      },
-      raw: true
-    }).then(arr => {
-      const { id, name, visitCount, price, is_private, params } = arr[0] || { };
-      expect(id).to.equal('s1');
-      expect(name).to.equal('slice_01');
-      expect(visitCount).to.equal(10);
-      expect(price).to.equal(5.2);
-      expect(is_private).to.equal(true);
-      expect(params && params.type).to.equal('line');
+  describe('Non json find', () => {
+    it('should be find success(findOne)', () => {
+      return DB2Test.findOne({
+        where: {
+          id: 's1'
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(pickNeed(slice1)).to.deep.equal(sampleData[0]);
+      });
     });
+
+    it('should be find success(findAll)', () => {
+      return DB2Test.findAll({
+        where: {
+          id: sampleData[10].id
+        },
+        raw: true
+      }).then(arr => {
+        expect(pickNeed(arr[10])).to.deep.equal(sampleData[0]);
+      });
+    });
+
+    it('should be find nothing', () => {
+      return DB2Test.findOne({
+        where: {
+          id: 's0'
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(!slice1).to.equal(true);
+      });
+    });
+
+    // TODO gt lte like iLike in ne orderby limit or and not
   });
 
-  it('should be find nothing', () => {
-    return DB2Test.findOne({
-      where: {
-        id: 's0'
-      },
-      raw: true
-    }).then(slice1 => {
-      expect(!slice1).to.equal(true);
+  describe('Basic json find', () => {
+    it('should be find success(json sub query)', () => {
+      const target = _.find(sampleData, s => _.get(s, 'params.type') === 'pie');
+      return DB2Test.findOne({
+        where: {
+          params: { type: 'pie' }
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(pickNeed(slice1)).to.deep.equal(target);
+      });
     });
+
+    it('should be find success(json sub query with nested key)', () => {
+      const target = _.find(sampleData, s => _.get(s, 'params.type') === 'bar');
+      return DB2Test.findOne({
+        where: {
+          'params.type': 'bar'
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(pickNeed(slice1)).to.deep.equal(target);
+      });
+    });
+
+    it('should be find nothing(json sub query)', () => {
+      return DB2Test.findOne({
+        where: {
+          params: { type: 'line1' }
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(!slice1).to.equal(true);
+      });
+    });
+
+    it('should be find nothing(json sub query with nested key)', () => {
+      return DB2Test.findOne({
+        where: {
+          'params.type': 'line1'
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(!slice1).to.equal(true);
+      });
+    });
+
+    // TODO gt lte like iLike in ne orderby limit or and not
   });
 
-  it('should be find success(json sub query)', () => {
-    return DB2Test.findOne({
-      where: {
-        params: { type: 'line' }
-      },
-      raw: true
-    }).then(slice1 => {
-      const { id, name, visitCount, price, is_private, params } = slice1 || { };
-      expect(id).to.equal('s1');
-      expect(name).to.equal('slice_01');
-      expect(visitCount).to.equal(10);
-      expect(price).to.equal(5.2);
-      expect(is_private).to.equal(true);
-      expect(params && params.type).to.equal('line');
+  describe('Json find all by client side filter', () => {
+    it('should be find success(json sub query)', () => {
+      const targets = _.filter(sampleData, s => _.get(s, 'params.type') === 'pie');
+      return DB2Test.findAll({
+        where: {
+          params: { type: 'pie' }
+        },
+        raw: true
+      }).then(slices => {
+        expect(slices.map(pickNeed)).to.deep.equal(targets);
+      });
     });
+
+    it('should be find success(json sub query with nested key)', () => {
+      const targets = _.filter(sampleData, s => _.get(s, 'params.type') === 'bar');
+      return DB2Test.findAll({
+        where: {
+          'params.type': 'bar'
+        },
+        raw: true
+      }).then(slices => {
+        expect(slices.map(pickNeed)).to.deep.equal(targets);
+      });
+    });
+
+    it('should be find nothing(json sub query)', () => {
+      return DB2Test.findAll({
+        where: {
+          params: { type: 'pie0' }
+        },
+        raw: true
+      }).then(slices => {
+        expect(slices).to.deep.equal([]);
+      });
+    });
+
+    it('should be find nothing(json sub query with nested key)', () => {
+      return DB2Test.findAll({
+        where: {
+          'params.type': 'bar0'
+        },
+        raw: true
+      }).then(slices => {
+        expect(slices).to.deep.equal([]);
+      });
+    });
+
+    // TODO gt lte like iLike in ne orderby limit or and not
   });
 
-  it('should be find success(json sub query with nested key)', () => {
-    return DB2Test.findOne({
-      where: {
-        'params.type': 'line'
-      },
-      raw: true
-    }).then(slice1 => {
-      const { id, name, visitCount, price, is_private, params } = slice1 || { };
-      expect(id).to.equal('s1');
-      expect(name).to.equal('slice_01');
-      expect(visitCount).to.equal(10);
-      expect(price).to.equal(5.2);
-      expect(is_private).to.equal(true);
-      expect(params && params.type).to.equal('line');
-    });
-  });
-
-  it('should be find nothing(json sub query)', () => {
-    return DB2Test.findOne({
-      where: {
-        params: { type: 'line1' }
-      },
-      raw: true
-    }).then(slice1 => {
-      expect(!slice1).to.equal(true);
-    });
-  });
-
-  it('should be find nothing(json sub query with nested key)', () => {
-    return DB2Test.findOne({
-      where: {
-        'params.type': 'line1'
-      },
-      raw: true
-    }).then(slice1 => {
-      expect(!slice1).to.equal(true);
-    });
-  });
-
-  /*it('should be find success(string path for json query)', async () => {
-    let slice1 = await DB2Test.findOne({
-      where: {
-        'params.type': 'line'
-      }
-    })
-    const { id, name, visitCount, price, is_private, params } = slice1 || { };
-    expect(id).to.equal('s1');
-    expect(name).to.equal('slice_01');
-    expect(visitCount).to.equal(10);
-    expect(price).to.equal(5.2);
-    expect(is_private).to.equal(true);
-    expect(params && params.type).to.equal('line');
-  })*/
-
-  // TODO findAll where -> findAll, client side filter
   // TODO count where -> findAll, client side aggregate
   // TODO update where -> findAll, updateById
   // TODO delete where -> findAll, deleteById
