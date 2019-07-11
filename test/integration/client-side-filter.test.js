@@ -84,6 +84,34 @@ describe('Client side filter', () => {
     });
   });*/
 
+  it('should be find success', () => {
+    return DB2Test.findOne({
+      where: {
+        id: 's1'
+      },
+      raw: true
+    }).then(slice1 => {
+      const { id, name, visitCount, price, is_private, params } = slice1 || { };
+      expect(id).to.equal('s1');
+      expect(name).to.equal('slice_01');
+      expect(visitCount).to.equal(10);
+      expect(price).to.equal(5.2);
+      expect(is_private).to.equal(true);
+      expect(params && params.type).to.equal('line');
+    });
+  });
+
+  it('should be find nothing', () => {
+    return DB2Test.findOne({
+      where: {
+        id: 's0'
+      },
+      raw: true
+    }).then(slice1 => {
+      expect(!slice1).to.equal(true);
+    });
+  });
+
   it('should be find success(json sub query)', () => {
     return DB2Test.findOne({
       where: {
@@ -101,10 +129,38 @@ describe('Client side filter', () => {
     });
   });
 
+  it('should be find success(json sub query with nested key)', () => {
+    return DB2Test.findOne({
+      where: {
+        'params.type': 'line'
+      },
+      raw: true
+    }).then(slice1 => {
+      const { id, name, visitCount, price, is_private, params } = slice1 || { };
+      expect(id).to.equal('s1');
+      expect(name).to.equal('slice_01');
+      expect(visitCount).to.equal(10);
+      expect(price).to.equal(5.2);
+      expect(is_private).to.equal(true);
+      expect(params && params.type).to.equal('line');
+    });
+  });
+
   it('should be find nothing(json sub query)', () => {
     return DB2Test.findOne({
       where: {
         params: { type: 'line1' }
+      },
+      raw: true
+    }).then(slice1 => {
+      expect(!slice1).to.equal(true);
+    });
+  });
+
+  it('should be find nothing(json sub query with nested key)', () => {
+    return DB2Test.findOne({
+      where: {
+        'params.type': 'line1'
       },
       raw: true
     }).then(slice1 => {
