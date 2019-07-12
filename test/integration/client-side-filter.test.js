@@ -9,19 +9,19 @@ const chai = require('chai'),
 describe('Client side filter', () => {
   let sequelize, DB2Test;
   const sampleData = _.range(50).map(i => ({
-    id: `s${i}`,
+    id: `s${i + 1}`,
     name: `slice_${i + 1}`,
     visitCount: 10 + i,
-    price: 5.2 + i * 5.2,
+    price: _.round(5.2 + i * 5.2, 2),
     is_private: i % 2 === 0,
-    params: {
+    params: _.pickBy({
       type: i % 3 === 0 ? 'line' : i % 3 === 1 ? 'bar' : 'pie',
       dimensions: i % 2 === 0 ? ['event_name', 'duration'] : ['event_name'],
       metrics: ['total'],
       extraSettings: i % 5 === 0
         ? { timeZone: i % 3 === 0 ? 'Asia/Tokyo' : 'Asia/Shanghai', refreshInterval: 5 * i }
         : undefined
-    }
+    }, _.identity)
   }));
   const needKeys = Object.keys(sampleData[0]);
   const pickNeed = obj => _.pick(obj, needKeys);
@@ -55,7 +55,7 @@ describe('Client side filter', () => {
   describe('Insert test', () => {
     it('should be create success', () => {
       return DB2Test.create(sampleData[0]).then(slice1 => {
-        expect(pickNeed(slice1)).to.deep.equal(sampleData[0]);
+        expect(sampleData[0]).to.deep.equal(pickNeed(slice1));
       });
     });
 
@@ -72,7 +72,7 @@ describe('Client side filter', () => {
         })
         .then(slices => {
           const picked = slices.map(pickNeed);
-          expect(picked).to.deep.equal(records);
+          expect(records).to.deep.equal(picked);
         });
     });
   });
@@ -85,7 +85,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(pickNeed(slice1)).to.deep.equal(sampleData[0]);
+        expect(sampleData[0]).to.deep.equal(pickNeed(slice1));
       });
     });
 
@@ -96,7 +96,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(arr => {
-        expect(pickNeed(arr[10])).to.deep.equal(sampleData[0]);
+        expect(sampleData[10]).to.deep.equal(pickNeed(arr[0]));
       });
     });
 
@@ -107,7 +107,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(!slice1).to.equal(true);
+        expect(true).to.equal(!slice1);
       });
     });
 
@@ -123,7 +123,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(pickNeed(slice1)).to.deep.equal(target);
+        expect(target).to.deep.equal(pickNeed(slice1));
       });
     });
 
@@ -135,7 +135,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(pickNeed(slice1)).to.deep.equal(target);
+        expect(target).to.deep.equal(pickNeed(slice1));
       });
     });
 
@@ -146,7 +146,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(!slice1).to.equal(true);
+        expect(true).to.equal(!slice1);
       });
     });
 
@@ -157,7 +157,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(!slice1).to.equal(true);
+        expect(true).to.equal(!slice1);
       });
     });
 
@@ -173,7 +173,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect(slices.map(pickNeed)).to.deep.equal(targets);
+        expect(targets).to.deep.equal(slices.map(pickNeed));
       });
     });
 
@@ -185,7 +185,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect(slices.map(pickNeed)).to.deep.equal(targets);
+        expect(targets).to.deep.equal(slices.map(pickNeed));
       });
     });
 
@@ -196,7 +196,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect(slices).to.deep.equal([]);
+        expect([]).to.deep.equal(slices);
       });
     });
 
@@ -207,7 +207,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect(slices).to.deep.equal([]);
+        expect([]).to.deep.equal(slices);
       });
     });
 
