@@ -32,7 +32,7 @@ describe('Client side filter', () => {
       // 兼容旧版本调用方式
       operatorsAliases: _.mapKeys(Sequelize.Op, (v, k) => `$${k}`)
     });
-    DB2Test = sequelize.define('DB2Test', {
+    DB2Test = sequelize.define('DB2Test2', {
       id: {
         type: Sequelize.STRING(32),
         primaryKey: true
@@ -123,7 +123,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(target).to.deep.equal(pickNeed(slice1));
+        expect(pickNeed(slice1)).to.deep.equal(target);
       });
     });
 
@@ -135,7 +135,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(target).to.deep.equal(pickNeed(slice1));
+        expect(pickNeed(slice1)).to.deep.equal(target);
       });
     });
 
@@ -146,7 +146,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(true).to.equal(!slice1);
+        expect(!slice1).to.equal(true);
       });
     });
 
@@ -157,7 +157,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slice1 => {
-        expect(true).to.equal(!slice1);
+        expect(!slice1).to.equal(true);
       });
     });
 
@@ -173,7 +173,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect(targets).to.deep.equal(slices.map(pickNeed));
+        expect(slices.map(pickNeed)).to.deep.equal(targets);
       });
     });
 
@@ -185,7 +185,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect(targets).to.deep.equal(slices.map(pickNeed));
+        expect(slices.map(pickNeed)).to.deep.equal(targets);
       });
     });
 
@@ -196,7 +196,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect([]).to.deep.equal(slices);
+        expect(slices).to.deep.equal([]);
       });
     });
 
@@ -207,7 +207,7 @@ describe('Client side filter', () => {
         },
         raw: true
       }).then(slices => {
-        expect([]).to.deep.equal(slices);
+        expect(slices).to.deep.equal([]);
       });
     });
 
@@ -217,4 +217,113 @@ describe('Client side filter', () => {
   // TODO count where -> findAll, client side aggregate
   // TODO update where -> findAll, updateById
   // TODO delete where -> findAll, deleteById
+
+  describe('findAndCountAll ', () => {
+    it('findAndCountAll by pk', () => {
+      return DB2Test.findAndCountAll({
+        where: {
+          id: 's1'
+        }
+      }).then(res => {
+        console.log('findAndCountAll by pk ====>', res.count);
+      });
+    });
+
+    it('findAndCountAll by bl', () => {
+      return DB2Test.findAndCountAll({
+        where: {
+          is_private: true
+        }
+      }).then(res => {
+        console.log('findAndCountAll by bl ====>', res.count);
+      });
+    });
+
+    it('findAndCountAll by json', () => {
+      return DB2Test.findAndCountAll({
+        where: {
+          params: { type: 'bar' }
+        },
+        raw: true
+      }).then(res => {
+        console.log('findAndCountAll by json ====>', res.count);
+      });
+    });
+    // TODO gt lte like iLike in ne orderby limit or and not
+  });
+
+  describe('update test', () => {
+    it('update by pk', () => {
+      return DB2Test.update({
+        price: 999.99
+      }, {
+        where: {
+          id: 's1'
+        }
+      }).then(res => {
+        console.log('update by pk', res);
+      });
+    });
+
+    it('update by bl', () => {
+      return DB2Test.update({
+        is_private: false
+      }, {
+        where: {
+          is_private: true
+        }
+      }).then(res => {
+        console.log('update by bl', res);
+      });
+    });
+
+    it('update by json', () => {
+      return DB2Test.update({
+        params: { type: 'bar999' }
+      }, {
+        where: {
+          params: { type: 'bar' }
+        },
+        raw: true
+      }).then(res => {
+        console.log('update by json', res);
+      });
+    });
+    // TODO gt lte like iLike in ne orderby limit or and not
+  });
+
+
+  describe('delete test', () => {
+    it('delete by pk', () => {
+      return DB2Test.destroy({
+        where: {
+          id: 's1'
+        }
+      }).then(res => {
+        console.log('delete by pk ===>', res );
+      });
+    });
+
+    it('delete by bl', () => {
+      return DB2Test.destroy({
+        where: {
+          is_private: true
+        }
+      }).then(res => {
+        console.log('delete by bl ===>', res );
+      });
+    });
+
+    it('delete by json', () => {
+      return DB2Test.destroy({
+        where: {
+          params: { type: 'bar999' }
+        }
+      }).then(res => {
+        console.log('delete by json ===>', res );
+      });
+    });
+    // TODO gt lte like iLike in ne orderby limit or and not
+  });
+
 });
