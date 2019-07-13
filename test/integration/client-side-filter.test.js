@@ -276,7 +276,7 @@ describe('Client side filter', () => {
 
   });
 
-  describe('Basic json find', () => {
+  describe('Json query', () => {
     it('should be find success(json sub query)', () => {
       const target = _.find(sampleData, s => _.get(s, 'params.type') === 'pie');
       return DB2Test.findOne({
@@ -348,10 +348,6 @@ describe('Client side filter', () => {
       });
     });
 
-    // TODO gt lte like iLike in ne orderby limit or and not
-  });
-
-  describe('Json find all by client side filter', () => {
     it('should be find success(json sub query)', () => {
       const targets = _.filter(sampleData, s => _.get(s, 'params.type') === 'pie');
       return DB2Test.findAll({
@@ -398,7 +394,188 @@ describe('Client side filter', () => {
       });
     });
 
-    // TODO gt lte like iLike in ne orderby limit or and not
+    it('should be find success(findAll gt)', () => {
+      const targets = _.filter(sampleData, s => {
+        const refreshInterval = _.get(s, 'params.extraSettings.refreshInterval');
+        return _.isNumber(refreshInterval) && 30 < refreshInterval;
+      });
+      return DB2Test.findAll({
+        where: {
+          'params.extraSettings.refreshInterval': { $gt: 30 }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll lte)', () => {
+      const targets = _.filter(sampleData, s => {
+        const refreshInterval = _.get(s, 'params.extraSettings.refreshInterval');
+        return _.isNumber(refreshInterval) && refreshInterval <= 30;
+      });
+      return DB2Test.findAll({
+        where: {
+          'params.extraSettings.refreshInterval': { $lte: 30 }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll like)', () => {
+      const targets = _.filter(sampleData, s => _.startsWith(s.params.type, 'pi'));
+      return DB2Test.findAll({
+        where: {
+          'params.type': { $like: 'pi%' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll not like)', () => {
+      const targets = _.filter(sampleData, s => !_.startsWith(s.params.type, 'pi'));
+      return DB2Test.findAll({
+        where: {
+          'params.type': { $notLike: 'pi%' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll iLike)', () => {
+      const targets = _.filter(sampleData, s => _.startsWith(s.params.type, 'pi'));
+      return DB2Test.findAll({
+        where: {
+          'params.type': { $iLike: 'PI%' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll in)', () => {
+      const targets = _.filter(sampleData, s => s.params.type === 'line' || s.params.type === 'pie');
+      return DB2Test.findAll({
+        where: {
+          'params.type': { $in: ['line', 'pie'] }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll ne)', () => {
+      const targets = _.filter(sampleData, s => s.params.type !== 'bar');
+      return DB2Test.findAll({
+        where: {
+          'params.type': { $ne: 'bar' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    // TODO
+    it.skip('should be find success(findAll json orderBy)', () => {
+      const targets = _.orderBy(sampleData, s => s.params.type, 'desc');
+      return DB2Test.findAll({
+        order: [['params.type', 'desc']],
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(json sub query with offset limit)', () => {
+      const targets = _(sampleData).filter(s => _.get(s, 'params.type') === 'pie').drop(5).take(5).value();
+      return DB2Test.findAll({
+        where: {
+          params: { type: 'pie' }
+        },
+        offset: 5,
+        limit: 5,
+        raw: true
+      }).then(slices => {
+        expect(slices.map(pickNeed)).to.deep.equal(targets);
+      });
+    });
+
+    it('should be find success(findAll or)', () => {
+      const targets = _.filter(sampleData, s => {
+        const type = _.get(s, 'params.type');
+        return type === 'line' || type === 'pie';
+      });
+      return DB2Test.findAll({
+        where: {
+          $or: [{ 'params.type': 'line' }, { 'params.type': 'pie' }]
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll or array)', () => {
+      const targets = _.filter(sampleData, s => {
+        const type = _.get(s, 'params.extraSettings.refreshInterval');
+        return type === 25 || type === 50;
+      });
+      return DB2Test.findAll({
+        where: {
+          'params.extraSettings.refreshInterval': {
+            $or: [25, 50]
+          }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll and)', () => {
+      const targets = _.filter(sampleData, s => {
+        return _.get(s, 'params.type') === 'bar'
+          && _.get(s, 'params.extraSettings.refreshInterval') === 20;
+      });
+      return DB2Test.findAll({
+        where: {
+          $and: {
+            'params.type': 'bar',
+            'params.extraSettings.refreshInterval': 20
+          }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll not)', () => {
+      const targets = _.filter(sampleData, s => {
+        return !(_.get(s, 'params.type') === 'pie'
+          && _.get(s, 'params.extraSettings.refreshInterval') === 25);
+      });
+      return DB2Test.findAll({
+        where: {
+          $not: {
+            'params.type': 'pie',
+            'params.extraSettings.refreshInterval': 25
+          }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
   });
 
   describe('findAndCountAll ', () => {
