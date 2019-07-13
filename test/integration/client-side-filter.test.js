@@ -111,7 +111,155 @@ describe('Client side filter', () => {
       });
     });
 
-    // TODO gt lte like iLike in ne orderby limit or and not
+    it('should be find success(findAll gt)', () => {
+      const targets = _.filter(sampleData, s => s.visitCount > 30);
+      return DB2Test.findAll({
+        where: {
+          visitCount: { $gt: 30 }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll lte)', () => {
+      const targets = _.filter(sampleData, s => s.visitCount <= 30);
+      return DB2Test.findAll({
+        where: {
+          visitCount: { $lte: 30 }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll like)', () => {
+      const targets = _.filter(sampleData, s => _.startsWith(s.name, 'slice_1'));
+      return DB2Test.findAll({
+        where: {
+          name: { $like: 'slice_1%' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find nothing(findAll iLike)', () => {
+      const targets = _.filter(sampleData, s => _.startsWith(s.name, 'SLICE_1'));
+      return DB2Test.findAll({
+        where: {
+          name: { $iLike: 'SLICE_1%' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll in)', () => {
+      const targets = _.filter(sampleData, s => s.name === 'slice_1' || s.name === 'slice_3');
+      return DB2Test.findAll({
+        where: {
+          name: { $in: ['slice_1', 'slice_3'] }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll ne)', () => {
+      const targets = _.filter(sampleData, s => s.name !== 'slice_1');
+      return DB2Test.findAll({
+        where: {
+          name: { $ne: 'slice_1' }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll orderBy)', () => {
+      const targets = _.orderBy(sampleData, s => s.visitCount, 'desc');
+      return DB2Test.findAll({
+        order: [['visitCount', 'desc']],
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll offset limit)', () => {
+      const targets = _(sampleData).drop(5).take(5).value();
+      return DB2Test.findAll({
+        offset: 5,
+        limit: 5,
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll or)', () => {
+      const targets = _.filter(sampleData, s => s.id === 's2' || s.name === 'slice_3');
+      return DB2Test.findAll({
+        where: {
+          $or: [{ id: 's2' }, { name: 'slice_3' }]
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll or array)', () => {
+      const targets = _.filter(sampleData, s => s.visitCount === 10 || s.visitCount === 20);
+      return DB2Test.findAll({
+        where: {
+          visitCount: {
+            $or: [10, 20]
+          }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll and)', () => {
+      const targets = _.filter(sampleData, s => s.id === 's2' || s.name === 'slice_2');
+      return DB2Test.findAll({
+        where: {
+          $and: {
+            id: 's2',
+            name: 'slice_2'
+          }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
+    it('should be find success(findAll not)', () => {
+      const targets = _.filter(sampleData, s => !(s.visitCount <= 50 && 6 <= s.price));
+      return DB2Test.findAll({
+        where: {
+          $not: {
+            visitCount: { $lte: 50 },
+            price: { $gte: 6 }
+          }
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
   });
 
   describe('Basic json find', () => {
