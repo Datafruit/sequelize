@@ -239,10 +239,6 @@ describe('Client side filter', () => {
     // TODO gt lte like iLike in ne orderby limit or and not
   });
 
-  // TODO count where -> findAll, client side aggregate
-  // TODO update where -> findAll, updateById
-  // TODO delete where -> findAll, deleteById
-
   describe('findAndCountAll ', () => {
     it('findAndCountAll by pk', () => {
       return DB2Test.findAndCountAll({
