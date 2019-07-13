@@ -161,8 +161,7 @@ describe('Client side filter', () => {
       });
     });
 
-    // TODO
-    it.skip('should be find success(findAll iLike)', () => {
+    it('should be find success(findAll iLike)', () => {
       const targets = _.filter(sampleData, s => _.startsWith(s.name, 'slice_1'));
       return DB2Test.findAll({
         where: {
