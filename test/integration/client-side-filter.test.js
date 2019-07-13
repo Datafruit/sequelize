@@ -127,6 +127,19 @@ describe('Client side filter', () => {
       });
     });
 
+    it('should be find success(mix json filter with non json filter)', () => {
+      const targets = _.filter(sampleData, s => s.id === 's3' && _.get(s, 'params.type') === 'pie');
+      return DB2Test.findAll({
+        where: {
+          id: 's3',
+          params: { type: 'pie' }
+        },
+        raw: true
+      }).then(slices => {
+        expect(targets).to.deep.equal(slices.map(pickNeed));
+      });
+    });
+
     it('should be find success(json sub query with nested key)', () => {
       const target = _.find(sampleData, s => _.get(s, 'params.type') === 'bar');
       return DB2Test.findOne({
@@ -158,6 +171,18 @@ describe('Client side filter', () => {
         raw: true
       }).then(slice1 => {
         expect(!slice1).to.equal(true);
+      });
+    });
+
+    it('should be find nothing(mix json filter with non json filter)', () => {
+      return DB2Test.findOne({
+        where: {
+          id: 's1',
+          'params.type': 'line1'
+        },
+        raw: true
+      }).then(slice1 => {
+        expect(true).to.equal(!slice1);
       });
     });
 
@@ -213,10 +238,6 @@ describe('Client side filter', () => {
 
     // TODO gt lte like iLike in ne orderby limit or and not
   });
-
-  // TODO count where -> findAll, client side aggregate
-  // TODO update where -> findAll, updateById
-  // TODO delete where -> findAll, deleteById
 
   describe('findAndCountAll ', () => {
     it('findAndCountAll by pk', () => {

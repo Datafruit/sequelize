@@ -22,6 +22,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "async-streamjs": "0.1.5",
     "bluebird": "^3.5.0",
     "cls-bluebird": "^2.1.0",
     "debug": "^4.1.1",
