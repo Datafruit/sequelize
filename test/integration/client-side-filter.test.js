@@ -65,14 +65,13 @@ describe('Client side filter', () => {
         .then(() => {
           return DB2Test.findAll({
             where: {
-              id: { $ne: 's1' }
+              id: { $ne: sampleData[0].id }
             },
             raw: true
           });
         })
         .then(slices => {
-          const picked = slices.map(pickNeed);
-          expect(records).to.deep.equal(picked);
+          expect(records).to.deep.equal(slices.map(pickNeed));
         });
     });
   });
