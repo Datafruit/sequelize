@@ -229,6 +229,18 @@ describe('Client side filter', () => {
       });
     });
 
+    it('should be find success(findAll name or json)', () => {
+      const targets = _.filter(sampleData, s => s.params.type === 'pie' || s.name === 'slice_3');
+      return DB2Test.findAll({
+        where: {
+          $or: [{ name: 'slice_3' }, { params: { type: 'pie' } }]
+        },
+        raw: true
+      }).then(arr => {
+        expect(targets).to.deep.equal(arr.map(pickNeed));
+      });
+    });
+
     it('should be find success(findAll or array)', () => {
       const targets = _.filter(sampleData, s => s.visitCount === 10 || s.visitCount === 20);
       return DB2Test.findAll({
